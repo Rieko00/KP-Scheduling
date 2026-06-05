@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jadwal Gasal – Visual Scheduler</title>
+  <link rel="stylesheet" href="/src/styles.css" />
+  <script type="importmap">
+      { "imports": { "d3": "https://cdn.jsdelivr.net/npm/d3@7/+esm" } }
+    </script>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="title">
+      <h1>Jadwal Gasal</h1>
+      <p class="subtitle">D3.js + SVG · Drag &amp; Drop · Edit</p>
+    </div>
+
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input id="searchInput" type="search" placeholder="Filter MK / Dosen…" />
+    </div>
+
+    <div class="controls">
+      <label class="filebtn" title="Import file CSV format matrix">
+        Import CSV
+        <input id="fileInput" type="file" accept=".csv,text/csv" />
+      </label>
+
+      <button id="undoBtn" type="button" title="Ctrl+Z" disabled>↩ Undo</button>
+      <button id="redoBtn" type="button" title="Ctrl+Y" disabled>↪ Redo</button>
+      <button id="resetBtn" type="button">Reset Posisi</button>
+
+      <div class="export-group">
+        <!-- <button id="exportListBtn"   type="button">Export List</button> -->
+        <button id="exportMatrixBtn" type="button">Export Matrix</button>
+        <button id="exportPdfBtn" type="button" class="btn-pdf">🖨 Export PDF</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="statusbar">
+    <span id="status" class="status"></span>
+    <span id="conflictInfo" class="conflict-info" style="display:none"></span>
+  </div>
+
+  <main>
+    <div id="canvasWrap" class="canvas-wrap">
+      <svg id="scheduleSvg"></svg>
+    </div>
+  </main>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
