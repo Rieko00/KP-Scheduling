@@ -7,7 +7,7 @@ export function attachDnD(renderCtx, model, state, onStateChange, onEventClick) 
   const { svg, cfg, dayLayouts, hintRect, rooms } = renderCtx;
   const { restIndex, slotStarts, slots }          = model;
 
-  // ─── Helpers Posisi ───────────────────────────────────────────────────
+  // Position Helper
 
   const pickDayLayout = y => dayLayouts.find(L => y >= L.y0 && y <= L.y0 + L.dayH) ?? null;
 
@@ -26,7 +26,7 @@ export function attachDnD(renderCtx, model, state, onStateChange, onEventClick) 
     a.hari === b.hari && a.room === b.room &&
     a.startMin < b.endMin && b.startMin < a.endMin;
 
-  // ─── Resolve Target Snap ──────────────────────────────────────────────
+  // Snap
 
   function resolveTarget(px, py, dragged) {
     const L = pickDayLayout(py);
@@ -48,8 +48,7 @@ export function attachDnD(renderCtx, model, state, onStateChange, onEventClick) 
     return { L, day: L.day, room: rooms[roomIdx], roomIdx, rowIdx, startMin, endMin };
   }
 
-  // ─── D3 Drag ──────────────────────────────────────────────────────────
-
+  // Drag
   const drag = d3.drag()
     .on("start", function(event, d) {
       d3.select(this).raise();
@@ -118,8 +117,6 @@ export function attachDnD(renderCtx, model, state, onStateChange, onEventClick) 
 
   svg.selectAll("g.event").call(drag);
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────
 
 function flashError(svg, id) {
   const rect = svg.select(`g.event[data-id="${cssSafe(id)}"] rect.event-rect`);

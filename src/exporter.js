@@ -1,6 +1,8 @@
 import { minToTime } from "./parser.js";
+import { detectDosenConflicts } from "./render.js";
+import { showToast } from "./toast.js";
 
-// ─── Export Format List ────────────────────────────────────────────────────
+// Export to list
 
 export function exportList(events) {
   const header = ["mata_kuliah", "kelas", "prodiTag", "dosen", "hari", "jam_mulai", "jam_selesai", "ruangan"];
@@ -22,9 +24,14 @@ export function exportList(events) {
   triggerDownload("jadwal_export_list.csv", lines.join("\n"));
 }
 
-// ─── Export Format Matrix (sama seperti input, bisa re-import) ────────────
+// Export Format Matrix (sama seperti input, bisa re-import)
 
 export function exportMatrix(model, state) {
+  const collision = detectDosenConflicts(state.events);
+  if (collision.size > 0) {
+    return false;
+  }
+
   exportOriginal(model, state);
 }
 
@@ -89,7 +96,6 @@ export function exportOriginal(model, state, title = "Jadwal Gasal Teknik Inform
   triggerDownload("jadwal_export.csv", lines.join("\n"));
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────
 
 function buildCellText(e) {
   const mk    = e.mata_kuliah || e.title || "";
@@ -115,9 +121,14 @@ function triggerDownload(filename, content) {
   URL.revokeObjectURL(a.href);
 }
 
-// ─── Export PDF (print-ready HTML table, satu tabel per hari) ─────────────
+// Export PDF 
 
 export function exportPdf(model, state, title = "Jadwal Gasal Teknik Informatika 2025/2026") {
+  const collision = detectDosenConflicts(state.events);
+  if (collision.size > 0) {
+    return false;
+  }
+  
   const { rooms, days, slots, slotStarts } = model;
 
   const colPct = (100 / (rooms.length + 1)).toFixed(2);

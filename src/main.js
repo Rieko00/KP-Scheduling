@@ -4,41 +4,32 @@ import { renderSchedule } from "./render.js";
 import { attachDnD } from "./dnd.js";
 import {
   loadState, saveState, clearState,
-  pushUndo, undo, redo, canUndo, canRedo
 } from "./state.js";
-import { initModal, openModal } from "./modal.js";
+import { initModal, openModal, openAddModal } from "./modal.js";
 import { exportList, exportMatrix, exportPdf } from "./exporter.js";
 import { showToast } from "./toast.js";
 import { DEFAULT_CSV_URL } from "./constants.js";
 
-// ─── DOM Elements ─────────────────────────────────────────────────────────
+// DOM Elements
 
 const svgEl = document.getElementById("scheduleSvg");
 const statusEl = document.getElementById("status");
 const fileInput = document.getElementById("fileInput");
 const resetBtn = document.getElementById("resetBtn");
-const undoBtn = document.getElementById("undoBtn");
-const redoBtn = document.getElementById("redoBtn");
-const exportListBtn = document.getElementById("exportListBtn");
-const exportPdfBtn = document.getElementById("exportPdfBtn");
+
 const exportMatrixBtn = document.getElementById("exportMatrixBtn");
+const addEventBtn    = document.getElementById("addEventBtn");
 const searchInput = document.getElementById("searchInput");
 const conflictInfo = document.getElementById("conflictInfo");
 
-// ─── App State ────────────────────────────────────────────────────────────
-
+// State Var
 let model = null;
 let state = null;
 let renderCtx = null;
 
-// ─── Status & Toolbar ─────────────────────────────────────────────────────
+// Conflict Status
 
 function setStatus(msg) { statusEl.textContent = msg || ""; }
-
-function updateToolbar() {
-  undoBtn.disabled = !canUndo();
-  redoBtn.disabled = !canRedo();
-}
 
 function updateConflictInfo() {
   const conflicts = getConflictCount();
@@ -66,7 +57,7 @@ function getConflictCount() {
   return count;
 }
 
-// ─── Render ───────────────────────────────────────────────────────────────
+// Render
 
 function reRender(extraStatus) {
   renderCtx = renderSchedule(svgEl, model, state, {
@@ -76,7 +67,6 @@ function reRender(extraStatus) {
 
   attachDnD(renderCtx, model, state, ({ reason, error } = {}) => {
     if (reason === "drop") {
-      pushUndo(state);
       saveState(state);
       showToast("Jadwal berhasil dipindahkan.", "success");
       reRender("Tersimpan.");
@@ -87,27 +77,38 @@ function reRender(extraStatus) {
     }
   }, (eventData) => {
     // Klik event card (bukan drag) → buka modal edit
-    openModal(eventData, model, handleEditSave);
+    openModal(eventData, model, handleEditSave, handleDeleteEvent);
   });
 
-  updateToolbar();
   updateConflictInfo();
   setStatus(extraStatus ?? `${model.events.length} kelas · Drag untuk pindah · Click untuk edit.`);
 }
 
-// ─── Edit Event via Modal ──────────────────────────────────────────────────
+// Modal FN
 
 function handleEditSave(updated) {
-  pushUndo(state);
   const idx = state.events.findIndex(e => e.id === updated.id);
   if (idx !== -1) state.events[idx] = updated;
   saveState(state);
-  showToast("Event berhasil diperbarui.", "success");
+  showToast("Jadwal berhasil diperbarui.", "success");
   reRender("Event diperbarui.");
 }
 
-// ─── State Helpers ────────────────────────────────────────────────────────
+function handleAddEvent(newEvent) {
+  state.events.push(newEvent);
+  saveState(state);
+  showToast(`Jadwal "${newEvent.mata_kuliah}" berhasil ditambahkan.`, "success");
+  reRender("Jadwal baru ditambahkan.");
+}
 
+function handleDeleteEvent(eventId) {
+  state.events = state.events.filter(e => e.id !== eventId);
+  saveState(state);
+  showToast("Jadwal berhasil dihapus.", "info");
+  reRender("Jadwal dihapus.");
+}
+
+// State Helper
 function hydrateState(model) {
   const saved = loadState();
   if (saved?.events?.length) {
@@ -127,7 +128,7 @@ function pickPosition(e) {
   return { hari: e.hari, room: e.room, startRow: e.startRow, startMin: e.startMin };
 }
 
-// ─── CSV Load ─────────────────────────────────────────────────────────────
+// Load CSV
 
 async function loadFromUrl(url) {
   return d3.text(url);
@@ -144,7 +145,7 @@ async function applyText(csvText, statusMsg) {
   reRender(statusMsg);
 }
 
-// ─── Init ─────────────────────────────────────────────────────────────────
+// Init
 
 async function init() {
   initModal();
@@ -153,7 +154,7 @@ async function init() {
   await applyText(text);
 }
 
-// ─── Event Listeners ──────────────────────────────────────────────────────
+// Event Listeners 
 
 fileInput.addEventListener("change", async e => {
   const file = e.target.files?.[0];
@@ -172,36 +173,31 @@ resetBtn.addEventListener("click", () => {
   reRender("Reset selesai.");
 });
 
-undoBtn.addEventListener("click", () => {
-  const prev = undo(state);
-  if (!prev) return;
-  state = prev;
-  saveState(state);
-  reRender("Undo.");
+exportMatrixBtn.addEventListener("click", () => {
+  const ok = exportMatrix(model, state);
+  if (ok === false) {
+    showToast("Export Gagal: ada konflik jadwal dosen. Selesaikan konflik terlebih dahulu.", "error");
+    setStatus("Export Gagal — konflik dosen.");
+  } else {
+    showToast("Export matrix CSV selesai.", "success");
+    setStatus("Export matrix selesai.");
+  }
 });
 
-redoBtn.addEventListener("click", () => {
-  const next = redo(state);
-  if (!next) return;
-  state = next;
-  saveState(state);
-  reRender("Redo.");
+exportPdfBtn.addEventListener("click", () => {
+  const ok = exportPdf(model, state);
+  if (ok === false) {
+    showToast("Export PDF Gagal: ada konflik jadwal dosen. Selesaikan konflik terlebih dahulu.", "error");
+    setStatus("Export PDF Gagal — konflik dosen.");
+  } else {
+    showToast("Jendela cetak PDF dibuka.", "info");
+    setStatus("Jendela cetak PDF dibuka.");
+  }
 });
 
-// Keyboard shortcut Ctrl+Z / Ctrl+Y
-document.addEventListener("keydown", e => {
-  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
-  if (e.ctrlKey && !e.shiftKey && e.key === "z") { e.preventDefault(); undoBtn.click(); }
-  if (e.ctrlKey && (e.key === "y" || (e.shiftKey && e.key === "z"))) { e.preventDefault(); redoBtn.click(); }
-});
-
-// exportListBtn.addEventListener("click", () =>   { exportList(state.events);  showToast("Export list CSV selesai.", "success"); setStatus("Export list selesai."); });
-exportMatrixBtn.addEventListener("click", () => { exportMatrix(model, state); showToast("Export matrix CSV selesai.", "success"); setStatus("Export matrix selesai."); });
-exportPdfBtn.addEventListener("click", () => { exportPdf(model, state); showToast("Jendela cetak PDF dibuka.", "info"); setStatus("Jendela cetak PDF dibuka."); });
+addEventBtn.addEventListener("click", () => openAddModal(model, handleAddEvent));
 
 searchInput.addEventListener("input", () => reRender());
 
-// Pasang pushUndo sebelum DnD drop (patch via onStateChange di reRender)
-// Ini sudah di-handle di dalam reRender → attachDnD callback
 
 init();

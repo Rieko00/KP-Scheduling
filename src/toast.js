@@ -1,4 +1,4 @@
-// ─── Toast Container ──────────────────────────────────────────────────────
+// Toast Container
 
 let container = null;
 
@@ -9,8 +9,7 @@ function ensureContainer() {
   document.body.appendChild(container);
 }
 
-// ─── Show Toast ───────────────────────────────────────────────────────────
-// type: "error" | "success" | "warning" | "info"
+// show toast
 
 export function showToast(message, type = "info", durationMs = 3500) {
   ensureContainer();

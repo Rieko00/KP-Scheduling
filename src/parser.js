@@ -1,7 +1,5 @@
 import { SLOT_MINUTES, REST_START_TIME } from "./constants.js";
 
-// ─── Utilitas Waktu ────────────────────────────────────────────────────────
-
 export function normalizeTimeStr(s) {
   return String(s).trim().replace(/\./g, ":");
 }
@@ -17,7 +15,6 @@ export function minToTime(totalMin) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-// ─── Parser Sel ────────────────────────────────────────────────────────────
 
 export function parseRangeFromText(text) {
   const m = normalizeTimeStr(text).match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
@@ -47,9 +44,7 @@ export function parseCellMeta(cellText) {
   };
 }
 
-// ─── Model Builder — format CSV asli Jadwal Gasal ─────────────────────────
-// Input: raw CSV text string (bukan d3 rows)
-// Struktur: multi-section per hari, room names di kolom 2-10 (+ col 11 = Lab Sos/Sister)
+//Model Builder
 
 export function buildModel(csvText) {
   if (!csvText?.trim()) throw new Error("CSV kosong atau tidak terbaca.");
@@ -71,7 +66,6 @@ export function buildModel(csvText) {
   return { rooms, days, slots, slotStarts, restIndex, events };
 }
 
-// ─── Private Helpers ───────────────────────────────────────────────────────
 
 function extractRooms(roomRow) {
   const rooms      = [];
@@ -166,8 +160,10 @@ function extractEvents(grid, firstRoomHeaderIdx, roomColMap, slotStarts) {
     for (const { ci, name: room } of roomColMap) {
       const cellStr = row[ci]?.trim() || "";
 
-      // Skip kosong dan label ruangan (mis. "Lab Sos", "Lab SIster")
-      if (!cellStr || !cellStr.includes(" / ")) continue;
+      // Skip: kosong, kode ruangan murni (angka saja mis. "407"), atau label ISTIRAHAT per-cell
+      if (!cellStr) continue;
+      if (/^\d+$/.test(cellStr)) continue;                                        // kode ruangan angka
+      if (cellStr.toUpperCase().replace(/\s+/g, "").includes("ISTIRAHAT")) continue; // istirahat per-cell
 
       const meta  = parseCellMeta(cellStr);
       const range = parseRangeFromText(cellStr) ?? { start: slotStart, end: slotEnd };
@@ -189,7 +185,6 @@ function extractEvents(grid, firstRoomHeaderIdx, roomColMap, slotStarts) {
   return { days, events };
 }
 
-// ─── Utils Parsing ─────────────────────────────────────────────────────────
 
 // Parse CSV teks mentah menjadi array 2D (baris × kolom), tangani quoted fields
 function parseCsvRaw(text) {

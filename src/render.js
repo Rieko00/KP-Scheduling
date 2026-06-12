@@ -145,7 +145,7 @@ export function renderSchedule(svgEl, model, state, opts = {}) {
 
 // Detect conflict
 
-function detectDosenConflicts(events) {
+export function detectDosenConflicts(events) {
   const conflictIds = new Set();
   const byDosen     = new Map();
 

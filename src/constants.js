@@ -4,7 +4,6 @@ export const STORAGE_KEY = "d3-jadwal-state-v1";
 export const DEFAULT_CSV_URL = "./Jadwal Gasal 25_26.csv";
 export const SLOT_MINUTES = 50;
 export const REST_START_TIME = "12:00";
-export const MAX_UNDO_STEPS = 30;
 
 // Konfigurasi layout SVG (semua nilai dalam piksel)
 export const LAYOUT = {
